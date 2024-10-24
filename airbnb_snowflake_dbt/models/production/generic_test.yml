@@ -1,0 +1,9 @@
+models:
+  - name: prod_airbnb_listings #name of the table which we want to perform tests on
+    columns:
+      - name: id
+        data_tests:
+          - not_null
+      - name: host_id
+        data_tests:
+          - not_null

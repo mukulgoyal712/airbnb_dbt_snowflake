@@ -1,0 +1,8 @@
+version: 2
+
+sources:
+  - name: airbnb #just a name
+    schema: staging
+    tables:
+      - name: listings
+      - name: reviews

@@ -1,0 +1,23 @@
+airbnb_snowflake_dbt:
+  outputs:
+    dev:
+      account: md37198.ap-southeast-1
+      database: airbnb_elt
+      password: Mynameismukul7890
+      role: accountadmin
+      schema: airbnb
+      threads: 10
+      type: snowflake
+      user: mukulg
+      warehouse: compute_wh
+  target: dev
+dbtsnow:
+  outputs:
+    dev:
+      account: md37198.ap-southeast-1
+      database: airbnb_elt
+      password: Mynameismukul7890
+      role: accountadmin
+      schema: airbnb
+      user: mukulg
+      warehouse: compute_wh
