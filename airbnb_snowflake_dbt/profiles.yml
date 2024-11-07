@@ -3,12 +3,12 @@ airbnb_snowflake_dbt:
     dev:
       account: md37198.ap-southeast-1
       database: airbnb_elt
-      password: Mynameismukul7890
+      password: "{{ env_var('DBT_PASSWORD') }}"
       role: accountadmin
       schema: airbnb
       threads: 10
       type: snowflake
-      user: mukulg
+      user: "{{ env_var('DBT_USER') }}"
       warehouse: compute_wh
   target: dev
 dbtsnow:
