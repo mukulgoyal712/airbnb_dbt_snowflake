@@ -14,7 +14,7 @@ from airflow.operators.python import PythonOperator
 from airflow.operators.bash import BashOperator
 from cosmos import ProjectConfig, ProfileConfig, ExecutionConfig
 # from cosmos.profiles import SnowflakeUserPasswordProfileMapping
-
+'''
 def notify_on_failure(context):
     task_instance = context['task_instance']
     task_id = task_instance.task_id
@@ -34,7 +34,7 @@ def notify_on_failure(context):
         subject=subject,
         html_content=html
     )
-
+'''
 def stream_from_github_to_s3():
 
     for section in ['listings','reviews']:
