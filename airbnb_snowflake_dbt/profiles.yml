@@ -1,20 +1,20 @@
 airbnb_snowflake_dbt:
   outputs:
     dev:
-      account: md37198.ap-southeast-1
+      account: pp34711.central-india.azure
       database: airbnb_elt
-      password: "{{ env_var('DBT_PASSWORD') }}"
+      password: Mynameismukul7890
       role: accountadmin
       schema: airbnb
       threads: 10
       type: snowflake
-      user: "{{ env_var('DBT_USER') }}"
+      user: mukulg
       warehouse: compute_wh
   target: dev
 dbtsnow:
   outputs:
     dev:
-      account: md37198.ap-southeast-1
+      account: pp34711.central-india.azure
       database: airbnb_elt
       password: Mynameismukul7890
       role: accountadmin

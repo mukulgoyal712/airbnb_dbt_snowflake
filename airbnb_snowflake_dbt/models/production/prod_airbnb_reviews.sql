@@ -2,7 +2,7 @@
     (
     materialized='table',
     schema='prod',
-    alias='prod_reviews' --to name different then sql file name
+    alias='prod_reviews'
     ) 
 }}
 
