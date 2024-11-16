@@ -30,7 +30,7 @@ def notify_on_failure(context):
     """
     
     send_email(
-        to=["mukulgoyal712@gmail.com"],  # Change to your email or use a list
+        to=["mukulgoyal712@gmail.com"], 
         subject=subject,
         html_content=html
     )
