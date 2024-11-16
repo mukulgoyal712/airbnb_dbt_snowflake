@@ -17,30 +17,30 @@ from cosmos import ProjectConfig, ProfileConfig, ExecutionConfig
 
 def stream_from_github_to_s3():
 
-    # for section in ['listings','reviews']:
-    #     for info in config.get(section, []):
-    #         # Make an HTTP request to GitHub to get the raw file content
+    for section in ['listings','reviews']:
+        for info in config.get(section, []):
+            # Make an HTTP request to GitHub to get the raw file content
             
-    #         github_url = info.get(f'GITHUB_REPO_{section}')
-    #         s3_file_path=info.get(f'S3_FILE_PATH_{section}')
+            github_url = info.get(f'GITHUB_REPO_{section}')
+            s3_file_path=info.get(f'S3_FILE_PATH_{section}')
 
-    response = requests.get(config.GITHUB_REPO_listings, stream=True)
-    
-    if response.status_code == 200:
-        # Create an S3 client using boto3
-        session = boto3.Session(
-            aws_access_key_id=BaseHook.get_connection('s3conn').login,
-            aws_secret_access_key=BaseHook.get_connection('s3conn').password,
-            region_name=config.region  # Specify your region
-        )
-        
-        s3_client = session.client('s3')
+            response = requests.get(github_url, stream=True)
+            
+            if response.status_code == 200:
+                # Create an S3 client using boto3
+                session = boto3.Session(
+                    aws_access_key_id=BaseHook.get_connection('s3conn').login,
+                    aws_secret_access_key=BaseHook.get_connection('s3conn').password,
+                    region_name=config.region  # Specify your region
+                )
+                
+                s3_client = session.client('s3')
 
-        # Upload the file directly to S3 in chunks (streaming data)
-        s3_client.upload_fileobj(response.raw, config.S3_BUCKET_NAME, config.S3_FILE_PATH)
-        print(f"File uploaded to S3 bucket {config.S3_BUCKET_NAME} with key {config.S3_FILE_PATH}")
-    else:
-        raise Exception(f"Failed to download file from GitHub. Status code: {response.status_code}")
+                # Upload the file directly to S3 in chunks (streaming data)
+                s3_client.upload_fileobj(response.raw, config.S3_BUCKET_NAME, s3_file_path)
+                print(f"File uploaded to S3 bucket {config.S3_BUCKET_NAME} with key {s3_file_path}")
+            else:
+                raise Exception(f"Failed to download file from GitHub. Status code: {response.status_code}")
 
 
 
@@ -60,35 +60,13 @@ with DAG(
     catchup=False,
 ) as dag:
     
+    #task to load csv from github repo to s3 bucket
     stream_from_github_to_s3_tsk = PythonOperator(
         task_id='stream_from_github_to_s3',
         python_callable=stream_from_github_to_s3,
     )
     
-    '''
-    upload_file_listings = PythonOperator(
-        task_id='upload_file_listings',
-        python_callable=upload_to_s3,
-        op_args=['/usr/local/snowflake-s3-dbt_proj/listings.csv', 'raw/listings/listings.csv', 's3-snowflake-airbnb-elt'],
-    )
-    
-    upload_file_listings = S3FileTransferOperator(
-        task_id='upload_file_listings',
-        source_file='/usr/local/snowflake-s3-dbt_proj/listings.csv',
-        dest_key='raw/listings/listings.csv',
-        bucket_name='s3-snowflake-airbnb-elt',
-        aws_conn_id='s3conn',  # Make sure this is set to the correct connection ID
-        replace=True  # Set to True to replace the file if it already exists
-    )
-    upload_file_reviews = S3FileTransferOperator(
-        task_id='upload_file_reviews',
-        source_file='/usr/local/snowflake-s3-dbt_proj/reviews.csv',
-        dest_key='raw/listings/reviews.csv',
-        bucket_name='s3-snowflake-airbnb-elt',
-        aws_conn_id='s3conn',  # Make sure this is set to the correct connection ID
-        replace=True  # Set to True to replace the file if it already exists
-    )
-'''
+    #task to load data into staging area snowflake
     copy_sql = """
     COPY INTO airbnb_elt.staging.reviews
     FROM @airbnb_elt.staging.reviews_folder;
@@ -99,21 +77,19 @@ with DAG(
     """
     load_file_to_snowflake_task = SnowflakeOperator(
         task_id='load_file_to_snowflake',
-        sql=copy_sql,  # The SQL query for loading data
-        snowflake_conn_id='staging_snowflake_conn_id',  # Replace with your Snowflake connection ID
-        autocommit=True,  # Ensure that the transaction is committed after execution
+        sql=copy_sql, 
+        snowflake_conn_id='staging_snowflake_conn_id', 
+        autocommit=True, 
     )
-    # 3. Task to run DBT transformations using BashOperator (instead of using DbtDag)
+    
+    #task to run dbt commands
 
     execution_config = ExecutionConfig(dbt_executable_path=f"{os.environ['AIRFLOW_HOME']}/dbt_venv/bin/dbt")
 
-    # Use BashOperator to run DBT commands
+    
     dbt_run = BashOperator(
         task_id="dbt_run",
         bash_command=f"cd /usr/local/airflow/dags/dbt/airbnb_snowflake_dbt && {execution_config.dbt_executable_path} run",
     )
 
-    # Task dependencies
-    # upload_file_listings >> upload_file_reviews >> load_file_to_snowflake_task >> dbt_run
-# download_file_from_githubupload_file_listings >> upload_file_reviews >> load_file_to_snowflake_task >> dbt_run
 stream_from_github_to_s3_tsk >> load_file_to_snowflake_task >> dbt_run
