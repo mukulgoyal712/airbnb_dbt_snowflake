@@ -7,6 +7,7 @@ import airflow_airbnb_dag_config as config
 import airflow
 from airflow import DAG
 # from airflow.decorators import dag, task
+from airflow.utils.email import send_email
 from airflow.hooks.base_hook import BaseHook
 from airflow.providers.snowflake.operators.snowflake import SnowflakeOperator
 from airflow.operators.python import PythonOperator
@@ -14,6 +15,25 @@ from airflow.operators.bash import BashOperator
 from cosmos import ProjectConfig, ProfileConfig, ExecutionConfig
 # from cosmos.profiles import SnowflakeUserPasswordProfileMapping
 
+def notify_on_failure(context):
+    task_instance = context['task_instance']
+    task_id = task_instance.task_id
+    dag_id = context['dag'].dag_id
+    execution_time = context['execution_date']
+    
+    subject = f"Task Failed: {task_id} in DAG: {dag_id}"
+    html = f"""
+    <h3>Task Failed: {task_id}</h3>
+    <p><strong>DAG:</strong> {dag_id}</p>
+    <p><strong>Execution Time:</strong> {execution_time}</p>
+    <p><strong>Error:</strong> {task_instance.state}</p>
+    """
+    
+    send_email(
+        to=["mukulgoyal712@gmail.com"],  # Change to your email or use a list
+        subject=subject,
+        html_content=html
+    )
 
 def stream_from_github_to_s3():
 
@@ -49,6 +69,8 @@ default_args={
         'owner': 'airflow',
         'retries': 1,
         'retry_delay': timedelta(minutes=0.1),
+        'email_on_failure': True, 
+        'on_failure_callback': notify_on_failure,
     }
 
 with DAG(
@@ -58,6 +80,7 @@ with DAG(
     schedule_interval='@daily',  
     start_date=datetime(2024,1,1),
     catchup=False,
+    tags=['data_pipeline', 'github', 's3', 'snowflake', 'dbt'],
 ) as dag:
     
     #task to load csv from github repo to s3 bucket
